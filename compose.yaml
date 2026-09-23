@@ -1,0 +1,77 @@
+name: eddie-hivemq-auth
+
+services:
+  postgres:
+    image: postgres:17-alpine
+    environment:
+      POSTGRES_DB: eddie
+      POSTGRES_USER: emqx
+      POSTGRES_PASSWORD: local-db-secret
+    healthcheck:
+      test: ["CMD-SHELL", "pg_isready -U emqx -d eddie"]
+      interval: 2s
+      timeout: 3s
+      retries: 30
+    volumes:
+      - postgres-data:/var/lib/postgresql/data
+      - ./docker/e2e/init.sql:/docker-entrypoint-initdb.d/001-mqtt-auth.sql:ro
+
+  tls-init:
+    image: alpine/openssl:3.5.4
+    entrypoint: ["/bin/sh", "-c"]
+    command:
+      - >-
+        openssl req -x509 -newkey rsa:2048 -nodes -days 1
+        -subj /CN=hivemq -addext subjectAltName=DNS:hivemq
+        -keyout /tls/tls.key -out /tls/tls.crt
+        && chmod 0640 /tls/tls.key
+        && chmod 0644 /tls/tls.crt
+    volumes:
+      - tls-data:/tls
+
+  hivemq:
+    build:
+      context: .
+    image: eddie-mqtt-auth-hivemq:local
+    environment:
+      HIVEMQ_DB_URL: jdbc:postgresql://postgres:5432/eddie
+      HIVEMQ_DB_USERNAME: emqx
+      HIVEMQ_DB_PASSWORD: local-db-secret
+      AIIDA_MQTT_PASSWORD: local-eddie-secret
+      HIVEMQ_AUTH_CACHE_SECONDS: 5
+      HIVEMQ_ACL_CACHE_SECONDS: 5
+      HIVEMQ_AUTH_CACHE_JITTER_SECONDS: 0
+      HIVEMQ_ACL_CACHE_JITTER_SECONDS: 0
+      HIVEMQ_TLS_ENABLED: "true"
+    depends_on:
+      postgres:
+        condition: service_healthy
+      tls-init:
+        condition: service_completed_successfully
+    ports:
+      - "${HIVEMQ_MQTT_PORT:-18883}:1883"
+      - "${HIVEMQ_MQTTS_PORT:-18884}:8883"
+    volumes:
+      - tls-data:/etc/mqtt-tls:ro
+
+  mqtt-test:
+    build:
+      context: ./docker/e2e
+    image: eddie-mqtt-auth-hivemq-test:local
+    profiles: ["test"]
+    entrypoint: ["/bin/sh", "/test/e2e.sh"]
+    environment:
+      PGHOST: postgres
+      PGDATABASE: eddie
+      PGUSER: emqx
+      PGPASSWORD: local-db-secret
+    depends_on:
+      hivemq:
+        condition: service_healthy
+    volumes:
+      - ./docker/e2e/e2e.sh:/test/e2e.sh:ro
+      - tls-data:/test/tls:ro
+
+volumes:
+  postgres-data:
+  tls-data:

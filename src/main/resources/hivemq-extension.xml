@@ -1,0 +1,9 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<hivemq-extension>
+    <id>${project.artifactId}</id>
+    <version>${project.version}</version>
+    <name>EDDIE PostgreSQL Authentication and Authorization</name>
+    <author>FlexiData</author>
+    <priority>1000</priority>
+    <start-priority>1000</start-priority>
+</hivemq-extension>

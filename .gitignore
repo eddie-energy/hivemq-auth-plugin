@@ -1,0 +1,11 @@
+.idea/
+target/
+.classpath
+.project
+.settings/
+*.iml
+*.log
+.DS_Store
+.env
+docker-compose.override.yml
+config

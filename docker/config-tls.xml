@@ -1,0 +1,30 @@
+<?xml version="1.0"?>
+<hivemq>
+    <listeners>
+        <tcp-listener>
+            <port>1883</port>
+            <bind-address>0.0.0.0</bind-address>
+        </tcp-listener>
+        <tls-tcp-listener>
+            <port>8883</port>
+            <bind-address>0.0.0.0</bind-address>
+            <tls>
+                <keystore>
+                    <path>/opt/hivemq/data/eddie-mqtt-tls.p12</path>
+                    <password>${HIVEMQ_TLS_KEYSTORE_PASSWORD}</password>
+                    <private-key-password>${HIVEMQ_TLS_KEYSTORE_PASSWORD}</private-key-password>
+                </keystore>
+                <client-authentication-mode>NONE</client-authentication-mode>
+            </tls>
+        </tls-tcp-listener>
+    </listeners>
+    <mqtt>
+        <queued-messages>
+            <max-queue-size>${HIVEMQ_MAX_QUEUED_MESSAGES}</max-queue-size>
+            <strategy>discard-oldest</strategy>
+        </queued-messages>
+    </mqtt>
+    <restrictions>
+        <max-connections>${HIVEMQ_MAX_CONNECTIONS}</max-connections>
+    </restrictions>
+</hivemq>
